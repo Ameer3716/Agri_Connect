@@ -15,7 +15,7 @@ on:
       - 'backend2/api-gateway/**'
       - 'backend2/auth-service/**'
       - 'backend2/main-service/**'
-      - '.github/workflows/ci.yml'
+      - '.github/workflows/ci.yml' # MAKE SURE THIS MATCHES YOUR FILENAME
 
 env:
   # For Docker Hub, the image prefix will be your username
@@ -106,20 +106,18 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     needs: lint-and-test
-    # No specific 'packages: write' permission needed for Docker Hub push,
-    # but keeping 'contents: read' is good.
     permissions:
       contents: read
 
     strategy:
       matrix:
         service_config:
-          - name: frontend # This will be part of the image name, e.g., yourdockerhubuser/frontend
-            image_suffix: frontend # If you want to keep it simple or use a project prefix
+          - name: frontend
+            image_suffix: frontend
             path: ./frontend
             dockerfile: ./frontend/Dockerfile
-            build_args: |
-              VITE_API_URL=${{ secrets.BUILD_VITE_API_URL || 'http://localhost:5000/api' }}
+            build_args: | # UPDATED LINE FOR ROBUST SECRET FALLBACK
+              VITE_API_URL=${{ secrets.BUILD_VITE_API_URL && secrets.BUILD_VITE_API_URL || 'http://localhost:5000/api' }}
           - name: api-gateway
             image_suffix: api-gateway
             path: ./backend2/api-gateway
@@ -146,20 +144,17 @@ jobs:
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }} # Use the Access Token here
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          # For Docker Hub, images are typically <username>/<imagename>
-          # You can choose a project prefix if desired, e.g., yourusername/myproject-frontend
           images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service_config.image_suffix }}
           tags: |
             type=sha,prefix=
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
-            # You can add more tagging strategies, like version numbers from git tags if you use them
 
       - name: Build and push Docker image for ${{ matrix.service_config.name }}
         uses: docker/build-push-action@v5
@@ -170,5 +165,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: ${{ matrix.service_config.build_args }}
-          cache-from: type=gha # Still beneficial for build speed
+          cache-from: type=gha
           cache-to: type=gha,mode=max
