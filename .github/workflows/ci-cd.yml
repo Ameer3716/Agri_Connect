@@ -14,16 +14,15 @@ on:
       - 'backend2/api-gateway/**'
       - 'backend2/auth-service/**'
       - 'backend2/main-service/**'
-      - '.github/workflows/ci-cd.yml' # Make sure this filename is correct
+      - '.github/workflows/ci-cd.yml' # Ensure this filename is correct
 
 env:
   NODE_VERSION: '18'
   # Define BUILD_VITE_API_URL here if it's non-sensitive and you want a default
-  BUILD_VITE_API_URL: 'http://default-api.example.com/api' # Or your desired default
+  BUILD_VITE_API_URL: 'http://localhost:5000/api' # Your desired default or placeholder
 
 jobs:
   lint-and-test:
-    # ... (lint-and-test job remains the same) ...
     name: Lint & Test - ${{ matrix.service_config.name }}
     runs-on: ubuntu-latest
     strategy:
@@ -83,7 +82,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          node-version: ${{ env.NODE_VERSION }} # This is fine, env is accessible here
           cache: 'npm'
           cache-dependency-path: ${{ matrix.service_config.cache_path }}
 
@@ -112,27 +111,27 @@ jobs:
     strategy:
       matrix:
         service_config:
-          - name: frontend
-            image_suffix: frontend
+          - name: frontend # This name is used for logs etc.
+            image_suffix: frontend # Used in image naming
             path: ./frontend
             dockerfile: ./frontend/Dockerfile
-            build_args: | # MODIFIED LINE
-              VITE_API_URL=${{ env.BUILD_VITE_API_URL }} # Use env context
+            # No 'build_args' key here in the matrix for frontend specifically using env.
+            # We will construct it directly in the action step.
           - name: api-gateway
             image_suffix: api-gateway
             path: ./backend2/api-gateway
             dockerfile: ./backend2/api-gateway/Dockerfile
-            build_args: ""
+            # build_args: "" # Not needed if we handle it conditionally below
           - name: auth-service
             image_suffix: auth-service
             path: ./backend2/auth-service
             dockerfile: ./backend2/auth-service/Dockerfile
-            build_args: ""
+            # build_args: ""
           - name: main-service
             image_suffix: main-service
             path: ./backend2/main-service
             dockerfile: ./backend2/main-service/Dockerfile
-            build_args: ""
+            # build_args: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -143,14 +142,14 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }} # This STAYS as a secret
-          password: ${{ secrets.DOCKERHUB_TOKEN }}   # This STAYS as a secret
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service_config.image_suffix }} # DOCKERHUB_USERNAME STAYS as a secret
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service_config.image_suffix }}
           tags: |
             type=sha,prefix=
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
@@ -164,6 +163,8 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: ${{ matrix.service_config.build_args }}
+          # Conditionally set build-args
+          build-args: | # This ensures build-args is always defined
+            ${{ matrix.service_config.name == 'frontend' && format('VITE_API_URL={0}', env.BUILD_VITE_API_URL) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
