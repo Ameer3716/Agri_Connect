@@ -1,0 +1,16 @@
+[{
+  "_id": {
+    "$oid": "67fcb9cf5ccf508f8325184c"
+  },
+  "farmer": {
+    "$oid": "67fcb4375ccf508f8325183a"
+  },
+  "productName": "Potatoes",
+  "price": 15,
+  "quantity": 200,
+  "available": true,
+  "createdAt": {
+    "$date": "2025-04-14T07:31:27.657Z"
+  },
+  "__v": 0
+}]

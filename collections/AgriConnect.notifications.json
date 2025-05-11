@@ -1,0 +1,42 @@
+[{
+  "_id": {
+    "$oid": "6805e6b69e96c2c8d327b2bb"
+  },
+  "user": {
+    "$oid": "67fcb4375ccf508f8325183a"
+  },
+  "type": "info",
+  "message": "Your profile has been updated successfully.",
+  "isRead": false,
+  "createdAt": {
+    "$date": "2025-04-21T10:00:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6805e6b69e96c2c8d327b2bc"
+  },
+  "user": {
+    "$oid": "67fcb4375ccf508f8325183a"
+  },
+  "type": "alert",
+  "message": "New order #ORD1234 has been placed.",
+  "isRead": false,
+  "createdAt": {
+    "$date": "2025-04-21T11:15:00.000Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "6805e6b69e96c2c8d327b2bd"
+  },
+  "user": {
+    "$oid": "67fcb4375ccf508f8325183a"
+  },
+  "type": "reminder",
+  "message": "Don't forget to schedule your next irrigation task.",
+  "isRead": true,
+  "createdAt": {
+    "$date": "2025-04-20T08:30:00.000Z"
+  }
+}]

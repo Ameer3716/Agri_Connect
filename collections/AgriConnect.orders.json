@@ -1,0 +1,29 @@
+[{
+  "_id": {
+    "$oid": "6805db13426f884e90333668"
+  },
+  "buyer": "67fcb4375ccf508f8325183a",
+  "listing": "67fcb9cf5ccf508f8325184c",
+  "quantity": 10,
+  "status": "confirmed",
+  "totalPrice": 1000,
+  "createdAt": "2025-04-21T11:30:00Z"
+},
+{
+  "_id": {
+    "$oid": "6805dff23b6c396740804b1e"
+  },
+  "buyer": {
+    "$oid": "67fcb4375ccf508f8325183a"
+  },
+  "listing": {
+    "$oid": "67fcb9cf5ccf508f8325184c"
+  },
+  "quantity": 5,
+  "status": "pending",
+  "totalPrice": 75,
+  "createdAt": {
+    "$date": "2025-04-21T06:04:34.860Z"
+  },
+  "__v": 0
+}]

@@ -1,0 +1,32 @@
+[{
+  "_id": {
+    "$oid": "67fcb7725ccf508f83251844"
+  },
+  "user": {
+    "$oid": "67fcb4375ccf508f8325183a"
+  },
+  "cropName": "Wheat",
+  "fieldAllocation": "Field 1",
+  "plantingDate": {
+    "$date": "2025-04-20T00:00:00.000Z"
+  },
+  "harvestDate": {
+    "$date": "2025-10-20T00:00:00.000Z"
+  },
+  "tasks": [
+    {
+      "taskName": "Irrigation",
+      "schedule": {
+        "$date": "2025-04-25T00:00:00.000Z"
+      },
+      "status": "pending",
+      "_id": {
+        "$oid": "67fcb7725ccf508f83251845"
+      }
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-04-14T07:21:22.271Z"
+  },
+  "__v": 0
+}]

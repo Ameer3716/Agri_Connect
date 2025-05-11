@@ -1,0 +1,15 @@
+[{
+  "_id": {
+    "$oid": "67fcb8055ccf508f83251847"
+  },
+  "user": {
+    "$oid": "67fcb4375ccf508f8325183a"
+  },
+  "type": "income",
+  "amount": 1500,
+  "description": "Sale of produce",
+  "date": {
+    "$date": "2025-04-18T00:00:00.000Z"
+  },
+  "__v": 0
+}]

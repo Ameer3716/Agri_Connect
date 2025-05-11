@@ -1,0 +1,26 @@
+[{
+  "_id": {
+    "$oid": "67fcb4375ccf508f8325183a"
+  },
+  "name": "Ameer Sultan",
+  "email": "ameer@gmail.com",
+  "password": "$2b$10$bbvuyW06bRvv8ov52RSvjONzMRE..pFfohp4l/UL/j71ebSIFq2Lu",
+  "userType": "Farmer",
+  "createdAt": {
+    "$date": "2025-04-14T07:07:35.162Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "67fcb6785ccf508f83251840"
+  },
+  "name": "Ahsan Sultan",
+  "email": "ahsan@gmail.com",
+  "password": "$2b$10$AUU.wsv05g.EJqLnBGChIOQJO37jecvzefCwCmHIoj8E4WjnRkyRO",
+  "userType": "Farmer",
+  "createdAt": {
+    "$date": "2025-04-14T07:17:12.253Z"
+  },
+  "__v": 0
+}]

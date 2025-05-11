@@ -1,0 +1,34 @@
+# Node modules
+node_modules/
+frontend/node_modules/
+backend2/api-gateway/node_modules/
+backend2/auth-service/node_modules/
+backend2/main-service/node_modules/
+
+# Environment files
+.env
+frontend/.env
+frontend/.env.*
+backend2/api-gateway/.env
+backend2/auth-service/.env
+backend2/main-service/.env
+backend2/auth-service/.env.test # If you created this
+
+# Build artifacts
+frontend/dist/
+# Add any other service-specific build output if not within dist
+
+# IDE & OS specific
+.vscode/
+.idea/
+*.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
+frontend/coverage/
+backend2/api-gateway/coverage/
+backend2/auth-service/coverage/
+backend2/main-service/coverage/
