@@ -1,10 +1,11 @@
-name: CI-CD Pipeline
+name: CI - Build Docker Images for Docker Hub
 
 on:
   push:
     branches:
-      - main
-      - develop
+      - main # Build images on push to main
+      - develop # And/or on push to develop
+      # Add any other branches you want to build images for
   pull_request:
     branches:
       - main
@@ -14,10 +15,11 @@ on:
       - 'backend2/api-gateway/**'
       - 'backend2/auth-service/**'
       - 'backend2/main-service/**'
-      - '.github/workflows/ci-cd.yml'
+      - '.github/workflows/ci.yml'
 
 env:
-  REGISTRY_IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+  # For Docker Hub, the image prefix will be your username
+  # This is set in the metadata action directly
   NODE_VERSION: '18'
 
 jobs:
@@ -31,12 +33,12 @@ jobs:
             path: ./frontend
             cache_path: frontend/package-lock.json
             lint_script: lint
-            test_env: # This IS a YAML map
+            test_env:
               VITE_API_URL: http://mock-gateway.test/api
           - name: api-gateway
             path: ./backend2/api-gateway
             cache_path: backend2/api-gateway/package-lock.json
-            test_env: # This IS a YAML map
+            test_env:
               NODE_ENV: test
               API_GATEWAY_PORT: 5000
               AUTH_SERVICE_URL: http://mock-auth-service.test
@@ -45,24 +47,24 @@ jobs:
           - name: auth-service
             path: ./backend2/auth-service
             cache_path: backend2/auth-service/package-lock.json
-            test_env: # This IS a YAML map
+            test_env:
               NODE_ENV: test
               PORT: 5001
               MONGO_URI: mongodb://localhost:27017/test_auth_db_dummy
-              JWT_SECRET: testjwtsecretforauthservice
-              SESSION_SECRET: testsessionsecretforauth
+              JWT_SECRET: testjwtsecretforauthserviceci
+              SESSION_SECRET: testsessionsecretforauthci
               REDIS_HOST: mockredis
               REDIS_PORT: 6379
               EMAIL_USER: test@example.com
               EMAIL_PASS: testpass
-              GOOGLE_CLIENT_ID: testgoogleclientid
-              GOOGLE_CLIENT_SECRET: testgoogleclientsecret
+              GOOGLE_CLIENT_ID: testgoogleclientidci
+              GOOGLE_CLIENT_SECRET: testgoogleclientsecretci
               GOOGLE_CALLBACK_URL: http://localhost:5000/api/auth/google/callback
               FRONTEND_URL: http://localhost:7000
           - name: main-service
             path: ./backend2/main-service
             cache_path: backend2/main-service/package-lock.json
-            test_env: # This IS a YAML map
+            test_env:
               NODE_ENV: test
               PORT: 5002
               MONGO_URI: mongodb://localhost:27017/test_main_db_dummy
@@ -70,11 +72,10 @@ jobs:
               MYSQL_USER: testuser
               MYSQL_PASSWORD: testpassword
               MYSQL_DATABASE: testdb_dummy
-              JWT_SECRET: testjwtsecretformainservice
+              JWT_SECRET: testjwtsecretformainserviceci
               AUTH_SERVICE_URL: http://mock-auth-service.test
               API_GATEWAY_PORT: 5000
               FRONTEND_URL: http://localhost:5173
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -97,35 +98,40 @@ jobs:
 
       - name: Run Tests - ${{ matrix.service_config.name }}
         working-directory: ${{ matrix.service_config.path }}
-        # THE CRITICAL LINE - This syntax is valid for GitHub Actions
         env: ${{ matrix.service_config.test_env }}
         run: npm test
 
   build-and-push-images:
-    name: Build & Push Docker Images
+    name: Build & Push Docker Images to Docker Hub
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     needs: lint-and-test
+    # No specific 'packages: write' permission needed for Docker Hub push,
+    # but keeping 'contents: read' is good.
     permissions:
       contents: read
-      packages: write
+
     strategy:
       matrix:
         service_config:
-          - name: frontend
+          - name: frontend # This will be part of the image name, e.g., yourdockerhubuser/frontend
+            image_suffix: frontend # If you want to keep it simple or use a project prefix
             path: ./frontend
             dockerfile: ./frontend/Dockerfile
             build_args: |
-              VITE_API_URL=${{ github.ref == 'refs/heads/main' && secrets.PROD_VITE_API_URL || secrets.STAGING_VITE_API_URL }}
+              VITE_API_URL=${{ secrets.BUILD_VITE_API_URL || 'http://localhost:5000/api' }}
           - name: api-gateway
+            image_suffix: api-gateway
             path: ./backend2/api-gateway
             dockerfile: ./backend2/api-gateway/Dockerfile
             build_args: ""
           - name: auth-service
+            image_suffix: auth-service
             path: ./backend2/auth-service
             dockerfile: ./backend2/auth-service/Dockerfile
             build_args: ""
           - name: main-service
+            image_suffix: main-service
             path: ./backend2/main-service
             dockerfile: ./backend2/main-service/Dockerfile
             build_args: ""
@@ -136,22 +142,24 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Log in to GitHub Container Registry
+      - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }} # Use the Access Token here
 
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY_IMAGE_PREFIX }}/${{ matrix.service_config.name }}
+          # For Docker Hub, images are typically <username>/<imagename>
+          # You can choose a project prefix if desired, e.g., yourusername/myproject-frontend
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service_config.image_suffix }}
           tags: |
             type=sha,prefix=
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=raw,value=develop,enable=${{ github.ref == 'refs/heads/develop' }}
+            # You can add more tagging strategies, like version numbers from git tags if you use them
 
       - name: Build and push Docker image for ${{ matrix.service_config.name }}
         uses: docker/build-push-action@v5
@@ -162,40 +170,5 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           build-args: ${{ matrix.service_config.build_args }}
-          cache-from: type=gha
+          cache-from: type=gha # Still beneficial for build speed
           cache-to: type=gha,mode=max
-
-  deploy:
-    name: Deploy Services
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    needs: build-and-push-images
-    environment:
-      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'staging' }}
-    steps:
-      - name: Determine Environment Suffix and Image Tag
-        id: env_details
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "SUFFIX=prod" >> $GITHUB_ENV
-            echo "IMAGE_TAG=latest" >> $GITHUB_ENV
-          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            echo "SUFFIX=staging" >> $GITHUB_ENV
-            echo "IMAGE_TAG=develop" >> $GITHUB_ENV
-          fi
-
-      - name: Placeholder Deploy Frontend
-        run: |
-          echo "Deploying frontend image: ${{ env.REGISTRY_IMAGE_PREFIX }}/frontend:${{ env.IMAGE_TAG }} to ${{ env.SUFFIX }} environment"
-
-      - name: Placeholder Deploy API Gateway
-        run: |
-          echo "Deploying api-gateway image: ${{ env.REGISTRY_IMAGE_PREFIX }}/api-gateway:${{ env.IMAGE_TAG }} to ${{ env.SUFFIX }} environment"
-
-      - name: Placeholder Deploy Auth Service
-        run: |
-          echo "Deploying auth-service image: ${{ env.REGISTRY_IMAGE_PREFIX }}/auth-service:${{ env.IMAGE_TAG }} to ${{ env.SUFFIX }} environment"
-
-      - name: Placeholder Deploy Main Service
-        run: |
-          echo "Deploying main-service image: ${{ env.REGISTRY_IMAGE_PREFIX }}/main-service:${{ env.IMAGE_TAG }} to ${{ env.SUFFIX }} environment"
