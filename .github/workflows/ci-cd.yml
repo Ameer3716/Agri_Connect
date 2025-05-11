@@ -3,9 +3,8 @@ name: CI - Build Docker Images for Docker Hub
 on:
   push:
     branches:
-      - main # Build images on push to main
-      - develop # And/or on push to develop
-      # Add any other branches you want to build images for
+      - main
+      - develop
   pull_request:
     branches:
       - main
@@ -15,15 +14,16 @@ on:
       - 'backend2/api-gateway/**'
       - 'backend2/auth-service/**'
       - 'backend2/main-service/**'
-      - '.github/workflows/ci.yml' # MAKE SURE THIS MATCHES YOUR FILENAME
+      - '.github/workflows/ci-cd.yml' # Make sure this filename is correct
 
 env:
-  # For Docker Hub, the image prefix will be your username
-  # This is set in the metadata action directly
   NODE_VERSION: '18'
+  # Define BUILD_VITE_API_URL here if it's non-sensitive and you want a default
+  BUILD_VITE_API_URL: 'http://default-api.example.com/api' # Or your desired default
 
 jobs:
   lint-and-test:
+    # ... (lint-and-test job remains the same) ...
     name: Lint & Test - ${{ matrix.service_config.name }}
     runs-on: ubuntu-latest
     strategy:
@@ -116,8 +116,8 @@ jobs:
             image_suffix: frontend
             path: ./frontend
             dockerfile: ./frontend/Dockerfile
-            build_args: | # UPDATED LINE FOR ROBUST SECRET FALLBACK
-              VITE_API_URL=${{ secrets.BUILD_VITE_API_URL && secrets.BUILD_VITE_API_URL || 'http://localhost:5000/api' }}
+            build_args: | # MODIFIED LINE
+              VITE_API_URL=${{ env.BUILD_VITE_API_URL }} # Use env context
           - name: api-gateway
             image_suffix: api-gateway
             path: ./backend2/api-gateway
@@ -143,14 +143,14 @@ jobs:
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
         with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }} # This STAYS as a secret
+          password: ${{ secrets.DOCKERHUB_TOKEN }}   # This STAYS as a secret
 
       - name: Extract Docker metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service_config.image_suffix }}
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ matrix.service_config.image_suffix }} # DOCKERHUB_USERNAME STAYS as a secret
           tags: |
             type=sha,prefix=
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
