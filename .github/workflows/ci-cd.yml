@@ -14,12 +14,11 @@ on:
       - 'backend2/api-gateway/**'
       - 'backend2/auth-service/**'
       - 'backend2/main-service/**'
-      - '.github/workflows/ci-cd.yml' # Ensure this filename is correct
+      - '.github/workflows/ci-cd.yml' # Ensure this matches your filename
 
 env:
   NODE_VERSION: '18'
-  # Define BUILD_VITE_API_URL here if it's non-sensitive and you want a default
-  BUILD_VITE_API_URL: 'http://localhost:5000/api' # Your desired default or placeholder
+  BUILD_VITE_API_URL: 'http://default-api.example.com/api'
 
 jobs:
   lint-and-test:
@@ -29,14 +28,15 @@ jobs:
       matrix:
         service_config:
           - name: frontend
-            path: ./frontend
-            cache_path: frontend/package-lock.json
+            path: ./frontend # Working directory for steps for this service
+            cache_path: frontend/package-lock.json # Path from repo root
             lint_script: lint
             test_env:
               VITE_API_URL: http://mock-gateway.test/api
           - name: api-gateway
             path: ./backend2/api-gateway
-            cache_path: backend2/api-gateway/package-lock.json
+            cache_path: backend2/api-gateway/package-lock.json # Path from repo root
+            # lint_script: # Define if you have one
             test_env:
               NODE_ENV: test
               API_GATEWAY_PORT: 5000
@@ -45,7 +45,8 @@ jobs:
               FRONTEND_URL: http://mock-frontend.test
           - name: auth-service
             path: ./backend2/auth-service
-            cache_path: backend2/auth-service/package-lock.json
+            cache_path: backend2/auth-service/package-lock.json # Path from repo root
+            # lint_script: # Define if you have one
             test_env:
               NODE_ENV: test
               PORT: 5001
@@ -62,7 +63,8 @@ jobs:
               FRONTEND_URL: http://localhost:7000
           - name: main-service
             path: ./backend2/main-service
-            cache_path: backend2/main-service/package-lock.json
+            cache_path: backend2/main-service/package-lock.json # Path from repo root
+            # lint_script: # Define if you have one
             test_env:
               NODE_ENV: test
               PORT: 5002
@@ -82,8 +84,9 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ env.NODE_VERSION }} # This is fine, env is accessible here
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          # cache-dependency-path is relative to the GITHUB_WORKSPACE (repo root)
           cache-dependency-path: ${{ matrix.service_config.cache_path }}
 
       - name: Install Dependencies for ${{ matrix.service_config.name }}
@@ -111,27 +114,23 @@ jobs:
     strategy:
       matrix:
         service_config:
-          - name: frontend # This name is used for logs etc.
-            image_suffix: frontend # Used in image naming
+          - name: frontend
+            image_suffix: frontend
             path: ./frontend
             dockerfile: ./frontend/Dockerfile
-            # No 'build_args' key here in the matrix for frontend specifically using env.
-            # We will construct it directly in the action step.
+            # build_args constructed in the step
           - name: api-gateway
             image_suffix: api-gateway
             path: ./backend2/api-gateway
             dockerfile: ./backend2/api-gateway/Dockerfile
-            # build_args: "" # Not needed if we handle it conditionally below
           - name: auth-service
             image_suffix: auth-service
             path: ./backend2/auth-service
             dockerfile: ./backend2/auth-service/Dockerfile
-            # build_args: ""
           - name: main-service
             image_suffix: main-service
             path: ./backend2/main-service
             dockerfile: ./backend2/main-service/Dockerfile
-            # build_args: ""
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -163,8 +162,7 @@ jobs:
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          # Conditionally set build-args
-          build-args: | # This ensures build-args is always defined
+          build-args: |
             ${{ matrix.service_config.name == 'frontend' && format('VITE_API_URL={0}', env.BUILD_VITE_API_URL) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
