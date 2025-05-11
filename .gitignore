@@ -5,14 +5,19 @@ backend2/api-gateway/node_modules/
 backend2/auth-service/node_modules/
 backend2/main-service/node_modules/
 
+# It's generally recommended to commit package-lock.json or yarn.lock
+# Ensure these are NOT ignored if you want reliable CI caching and builds.
+# !**/package-lock.json # This would explicitly un-ignore, but usually not needed if not previously ignored.
+
 # Environment files
 .env
 frontend/.env
 frontend/.env.*
+!frontend/.env.example # Example: explicitly track .env.example files
 backend2/api-gateway/.env
 backend2/auth-service/.env
 backend2/main-service/.env
-backend2/auth-service/.env.test # If you created this
+backend2/auth-service/.env.test
 
 # Build artifacts
 frontend/dist/
