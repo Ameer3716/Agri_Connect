@@ -10,7 +10,7 @@ on:
       - main
       - develop
     paths:
-      - 'frontend/**'
+      - 'agri-connect-frontend/**'
       - 'backend2/api-gateway/**'
       - 'backend2/auth-service/**'
       - 'backend2/main-service/**'
@@ -28,9 +28,9 @@ jobs:
     strategy:
       matrix:
         service_config:
-          - name: frontend
-            path: ./frontend # Working directory for steps for this service
-            cache_path: frontend/package-lock.json # Path from repo root for caching
+          - name: agri-connect-frontend
+            path: ./agri-connect-frontend # Working directory for steps for this service
+            cache_path: agri-connect-frontend/package-lock.json # Path from repo root for caching
             lint_script: lint # Assumes 'lint' script in frontend/package.json
             test_env:
               VITE_API_URL: http://mock-gateway.test/api
@@ -85,7 +85,7 @@ jobs:
       - name: Debug file structure for cache path
         # This step helps verify if the package-lock.json files are where caching expects them.
         # It will run only for the services that previously showed caching errors, but you can adjust the 'if' condition.
-        if: matrix.service_config.name == 'frontend' || matrix.service_config.name == 'auth-service' || matrix.service_config.name == 'api-gateway' || matrix.service_config.name == 'main-service'
+        if: matrix.service_config.name == 'agri-connect-frontend' || matrix.service_config.name == 'auth-service' || matrix.service_config.name == 'api-gateway' || matrix.service_config.name == 'main-service'
         run: |
           echo "--- Debug for ${{ matrix.service_config.name }} ---"
           echo "Current directory: $(pwd)"
@@ -133,10 +133,10 @@ jobs:
     strategy:
       matrix:
         service_config:
-          - name: frontend
-            image_suffix: frontend
-            path: ./frontend
-            dockerfile: ./frontend/Dockerfile
+          - name: agri-connect-frontend
+            image_suffix: agri-connect-frontend
+            path: ./agri-connect-frontend
+            dockerfile: ./agri-connect-frontend/Dockerfile
           - name: api-gateway
             image_suffix: api-gateway
             path: ./backend2/api-gateway
