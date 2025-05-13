@@ -1,0 +1,951 @@
+openapi: 3.0.3
+info:
+  title: AgriConnect Main Service API
+  description: API documentation for the AgriConnect Main Service, providing endpoints for farmers to manage crop plans, farm tasks, financial transactions, market prices, and product listings.
+  version: 1.0.0
+servers:
+  - url: http://localhost:5002
+    description: Local development server
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CropPlan:
+      type: object
+      properties:
+        _id:
+          type: string
+          description: Unique identifier for the crop plan
+        farmer:
+          type: string
+          description: ID of the farmer who owns this plan
+        cropName:
+          type: string
+          description: Name and variety of the crop
+        fieldName:
+          type: string
+          description: Name or ID of the field
+        area:
+          type: string
+          description: Area of the field (e.g., "10 Acres")
+        plantingDate:
+          type: string
+          format: date
+          description: Date of planting
+        expectedHarvestDate:
+          type: string
+          format: date
+          description: Expected harvest date
+        status:
+          type: string
+          enum: [Planned, Planted, Growing, Flowering, Harvest Ready, Harvested, Cancelled]
+          description: Current status of the crop plan
+        notes:
+          type: string
+          description: Additional notes
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - cropName
+        - fieldName
+        - area
+        - status
+    FarmTask:
+      type: object
+      properties:
+        _id:
+          type: string
+        farmer:
+          type: string
+        task:
+          type: string
+          description: Name of the task
+        description:
+          type: string
+        due:
+          type: string
+          format: date
+          description: Due date for the task
+        priority:
+          type: string
+          enum: [Low, Medium, High]
+        status:
+          type: string
+          enum: [Pending, In Progress, Completed, On Hold, Cancelled]
+        assignedTo:
+          type: string
+          description: Person or entity assigned to the task
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - task
+        - due
+    FinancialTransaction:
+      type: object
+      properties:
+        _id:
+          type: string
+        farmer:
+          type: string
+        date:
+          type: string
+          format: date
+          description: Date of the transaction
+        description:
+          type: string
+        type:
+          type: string
+          enum: [Income, Expense]
+        category:
+          type: string
+          description: Category of the transaction (e.g., Sales, Miscellaneous)
+        amount:
+          type: number
+          description: Transaction amount
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - date
+        - description
+        - type
+        - amount
+    FinancialSummary:
+      type: object
+      properties:
+        totalIncome:
+          type: number
+          description: Total income from all transactions
+        totalExpenses:
+          type: number
+          description: Total expenses from all transactions
+        netProfit:
+          type: number
+          description: Net profit (totalIncome - totalExpenses)
+        expenseBreakdown:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: Category name
+              value:
+                type: number
+                description: Total amount for the category
+        lastUpdated:
+          type: string
+          format: date-time
+          description: Timestamp of the last update
+    MarketPrice:
+      type: object
+      properties:
+        _id:
+          type: string
+        farmer:
+          type: string
+        crop:
+          type: string
+          description: Name of the crop
+        price:
+          type: number
+          description: Price of the crop
+        unit:
+          type: string
+          description: Unit of measurement (e.g., kg, quintal)
+        source:
+          type: string
+          description: Source of the price information
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - crop
+        - price
+        - unit
+    ProductListing:
+      type: object
+      properties:
+        _id:
+          type: string
+        farmer:
+          type: string
+        productName:
+          type: string
+          description: Name of the product
+        category:
+          type: string
+          description: Category of the product
+        quantity:
+          type: number
+          description: Quantity available
+        unit:
+          type: string
+          description: Unit of measurement
+        pricePerUnit:
+          type: number
+          description: Price per unit
+        description:
+          type: string
+        imageUrl:
+          type: string
+          description: URL to the product image
+        location:
+          type: string
+          description: Location of the product
+        status:
+          type: string
+          enum: [active, inactive, sold]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+      required:
+        - productName
+        - category
+        - quantity
+        - unit
+        - pricePerUnit
+        - description
+paths:
+  /cropplans:
+    get:
+      summary: Get all crop plans for the logged-in farmer
+      tags:
+        - Farmer - Crop Plans
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of crop plans
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CropPlan'
+        '401':
+          description: Unauthorized - Invalid or missing token
+    post:
+      summary: Create a new crop plan
+      tags:
+        - Farmer - Crop Plans
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cropName:
+                  type: string
+                fieldName:
+                  type: string
+                area:
+                  type: string
+                plantingDate:
+                  type: string
+                  format: date
+                expectedHarvestDate:
+                  type: string
+                  format: date
+                status:
+                  type: string
+                  enum: [Planned, Planted, Growing, Flowering, Harvest Ready, Harvested, Cancelled]
+                notes:
+                  type: string
+              required:
+                - cropName
+                - fieldName
+                - area
+      responses:
+        '201':
+          description: Crop plan created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CropPlan'
+        '400':
+          description: Bad request - Missing required fields
+        '401':
+          description: Unauthorized - Invalid or missing token
+  /cropplans/{id}:
+    get:
+      summary: Get a crop plan by ID
+      tags:
+        - Farmer - Crop Plans
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Crop plan details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CropPlan'
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Crop plan not found
+    put:
+      summary: Update a crop plan
+      tags:
+        - Farmer - Crop Plans
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cropName:
+                  type: string
+                fieldName:
+                  type: string
+                area:
+                  type: string
+                plantingDate:
+                  type: string
+                  format: date
+                expectedHarvestDate:
+                  type: string
+                  format: date
+                status:
+                  type: string
+                  enum: [Planned, Planted, Growing, Flowering, Harvest Ready, Harvested, Cancelled]
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Crop plan updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CropPlan'
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Crop plan not found
+    delete:
+      summary: Delete a crop plan
+      tags:
+        - Farmer - Crop Plans
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Crop plan deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Crop plan removed successfully
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Crop plan not found
+  /tasks:
+    get:
+      summary: Get all farm tasks for the logged-in farmer
+      tags:
+        - Farmer - Farm Tasks
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of farm tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FarmTask'
+        '401':
+          description: Unauthorized - Invalid or missing token
+    post:
+      summary: Create a new farm task
+      tags:
+        - Farmer - Farm Tasks
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                task:
+                  type: string
+                description:
+                  type: string
+                due:
+                  type: string
+                  format: date
+                priority:
+                  type: string
+                  enum: [Low, Medium, High]
+                status:
+                  type: string
+                  enum: [Pending, In Progress, Completed, On Hold, Cancelled]
+                assignedTo:
+                  type: string
+                notes:
+                  type: string
+              required:
+                - task
+                - due
+      responses:
+        '201':
+          description: Farm task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FarmTask'
+        '400':
+          description: Bad request - Missing required fields
+        '401':
+          description: Unauthorized - Invalid or missing token
+  /tasks/{id}:
+    get:
+      summary: Get a farm task by ID
+      tags:
+        - Farmer - Farm Tasks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Farm task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FarmTask'
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Farm task not found
+    put:
+      summary: Update a farm task
+      tags:
+        - Farmer - Farm Tasks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                task:
+                  type: string
+                description:
+                  type: string
+                due:
+                  type: string
+                  format: date
+                priority:
+                  type: string
+                  enum: [Low, Medium, High]
+                status:
+                  type: string
+                  enum: [Pending, In Progress, Completed, On Hold, Cancelled]
+                assignedTo:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Farm task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FarmTask'
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Farm task not found
+    delete:
+      summary: Delete a farm task
+      tags:
+        - Farmer - Farm Tasks
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Farm task deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Task removed successfully
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Farm task not found
+  /financials/transactions:
+    get:
+      summary: Get all financial transactions for the logged-in farmer
+      tags:
+        - Farmer - Financial Transactions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of financial transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FinancialTransaction'
+        '401':
+          description: Unauthorized - Invalid or missing token
+    post:
+      summary: Create a new financial transaction
+      tags:
+        - Farmer - Financial Transactions
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                date:
+                  type: string
+                  format: date
+                description:
+                  type: string
+                type:
+                  type: string
+                  enum: [Income, Expense]
+                category:
+                  type: string
+                amount:
+                  type: number
+              required:
+                - date
+                - description
+                - type
+                - amount
+      responses:
+        '201':
+          description: Financial transaction created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialTransaction'
+        '400':
+          description: Bad request - Missing or invalid fields
+        '401':
+          description: Unauthorized - Invalid or missing token
+  /financials/transactions/{id}:
+    delete:
+      summary: Delete a financial transaction
+      tags:
+        - Farmer - Financial Transactions
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Financial transaction deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Transaction removed
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Financial transaction not found
+  /financials/summary:
+    get:
+      summary: Get financial summary for the logged-in farmer
+      tags:
+        - Farmer - Financial Transactions
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Financial summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FinancialSummary'
+        '401':
+          description: Unauthorized - Invalid or missing token
+  /marketprices:
+    get:
+      summary: Get all market prices for the logged-in farmer
+      tags:
+        - Farmer - Market Prices
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of market prices
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MarketPrice'
+        '401':
+          description: Unauthorized - Invalid or missing token
+        '500':
+          description: Server error
+    post:
+      summary: Create a new market price entry
+      tags:
+        - Farmer - Market Prices
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                crop:
+                  type: string
+                price:
+                  type: number
+                unit:
+                  type: string
+                source:
+                  type: string
+                notes:
+                  type: string
+              required:
+                - crop
+                - price
+                - unit
+      responses:
+        '201':
+          description: Market price created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketPrice'
+        '400':
+          description: Bad request - Missing or invalid fields
+        '401':
+          description: Unauthorized - Invalid or missing token
+  /marketprices/{id}:
+    put:
+      summary: Update a market price entry
+      tags:
+        - Farmer - Market Prices
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                crop:
+                  type: string
+                price:
+                  type: number
+                unit:
+                  type: string
+                source:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Market price updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarketPrice'
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Market price not found
+    delete:
+      summary: Delete a market price entry
+      tags:
+        - Farmer - Market Prices
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Market price deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Market price entry removed
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Market price not found
+  /listings:
+    get:
+      summary: Get all product listings for the logged-in farmer
+      tags:
+        - Farmer - Product Listings
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: List of product listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProductListing'
+        '401':
+          description: Unauthorized - Invalid or missing token
+    post:
+      summary: Create a new product listing
+      tags:
+        - Farmer - Product Listings
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productName:
+                  type: string
+                category:
+                  type: string
+                quantity:
+                  type: number
+                unit:
+                  type: string
+                pricePerUnit:
+                  type: number
+                description:
+                  type: string
+                imageUrl:
+                  type: string
+                location:
+                  type: string
+                status:
+                  type: string
+                  enum: [active, inactive, sold]
+              required:
+                - productName
+                - category
+                - quantity
+                - unit
+                - pricePerUnit
+                - description
+      responses:
+        '201':
+          description: Product listing created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListing'
+        '400':
+          description: Bad request - Missing or invalid fields
+        '401':
+          description: Unauthorized - Invalid or missing token
+  /listings/{id}:
+    get:
+      summary: Get a product listing by ID
+      tags:
+        - Farmer - Product Listings
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product listing details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListing'
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Product listing not found
+    put:
+      summary: Update a product listing
+      tags:
+        - Farmer - Product Listings
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                productName:
+                  type: string
+                category:
+                  type: string
+                quantity:
+                  type: number
+                unit:
+                  type: string
+                pricePerUnit:
+                  type: number
+                description:
+                  type: string
+                imageUrl:
+                  type: string
+                location:
+                  type: string
+                status:
+                  type: string
+                  enum: [active, inactive, sold]
+      responses:
+        '200':
+          description: Product listing updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductListing'
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Product listing not found
+    delete:
+      summary: Delete a product listing
+      tags:
+        - Farmer - Product Listings
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product listing deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Product listing removed
+        '401':
+          description: Unauthorized - Not owner or invalid token
+        '404':
+          description: Product listing not found
