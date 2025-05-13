@@ -32,12 +32,12 @@ jobs:
             path: ./agri-connect-frontend
             cache_path: agri-connect-frontend/package-lock.json
             lint_script: lint
-            # No test_env needed if tests are not run
+            test_env: {} # MODIFIED: Ensure test_env is always a map, even if empty
           - name: api-gateway
             path: ./backend2/api-gateway
             cache_path: backend2/api-gateway/package-lock.json
             # lint_script: # Define if you have one in api-gateway/package.json
-            # No test_env needed if tests are not run
+            test_env: {} # MODIFIED: Ensure test_env is always a map, even if empty
           - name: auth-service
             path: ./backend2/auth-service
             cache_path: backend2/auth-service/package-lock.json
@@ -77,7 +77,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Debug file structure for cache path
-        # This step helps verify if the package-lock.json files are where caching expects them.
         if: matrix.service_config.name == 'agri-connect-frontend' || matrix.service_config.name == 'auth-service' || matrix.service_config.name == 'api-gateway' || matrix.service_config.name == 'main-service'
         run: |
           echo "--- Debug for ${{ matrix.service_config.name }} ---"
@@ -104,22 +103,19 @@ jobs:
       - name: Install Dependencies for ${{ matrix.service_config.name }}
         working-directory: ${{ matrix.service_config.path }}
         run: npm ci
-        # If `npm ci` for agri-connect-frontend continues to get "canceled":
-        # 1. Check runner logs for more detailed cancellation reasons if available.
-        # 2. Ensure `agri-connect-frontend/package-lock.json` is valid and not corrupted.
-        # 3. Try running `npm ci` locally in a clean checkout of that specific commit.
-        # 4. Consider if any specific dependency in frontend is known to cause issues in CI environments.
 
       - name: Lint - ${{ matrix.service_config.name }}
-        if: matrix.service_config.lint_script # Only runs if lint_script is defined in the matrix
+        if: matrix.service_config.lint_script # Only runs if lint_script is defined and non-empty
         working-directory: ${{ matrix.service_config.path }}
         run: npm run ${{ matrix.service_config.lint_script }}
+        # This step will fail the job if lint errors are present (e.g., for agri-connect-frontend)
+        # To allow pipeline to continue despite lint errors, add: continue-on-error: true
 
       - name: Run Tests - ${{ matrix.service_config.name }}
         # Only run tests for services that have them (auth-service and main-service)
         if: matrix.service_config.name == 'auth-service' || matrix.service_config.name == 'main-service'
         working-directory: ${{ matrix.service_config.path }}
-        env: ${{ matrix.service_config.test_env }}
+        env: ${{ matrix.service_config.test_env }} # This is now safe
         run: npm test
 
   build-and-push-images:
